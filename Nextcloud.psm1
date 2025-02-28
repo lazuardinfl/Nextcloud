@@ -1,3 +1,24 @@
+function Find-NextcloudItem {
+    [OutputType([System.Xml.XmlDocument])]
+    param (
+        [Alias("NextcloudUrl")] [ValidateNotNullOrWhiteSpace()] [string]$url,
+        [Alias("ItemPath")] [ValidateNotNullOrWhiteSpace()] [string]$path,
+        [Alias("UserId")] [ValidateNotNullOrWhiteSpace()] [string]$id,
+        [Alias("UserPassword")] [ValidateNotNullOrWhiteSpace()] [string]$pass,
+        [Alias("OnErrorContinue")] [switch]$silent
+    )
+    try {
+        $rest = @{
+            Uri = "$($url)/remote.php/dav/files/$($id)/$($path)"
+            CustomMethod = "PROPFIND"
+            Authentication = "Basic"
+            Credential = [pscredential]::new($id, (ConvertTo-SecureString $pass -AsPlainText -Force))
+        }
+        return Invoke-RestMethod @rest
+    }
+    catch { if ($silent) { return $null } else { throw } }
+}
+
 function Get-NextcloudItem {
     [OutputType([System.IO.FileInfo])]
     param (
