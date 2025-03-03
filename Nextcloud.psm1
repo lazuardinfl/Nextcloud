@@ -67,3 +67,29 @@ function Set-NextcloudItem {
     }
     catch { if ($silent) { return $false } else { throw } }
 }
+
+function Set-NextcloudDirectory {
+    [OutputType([System.Xml.XmlDocument])]
+    param (
+        [Alias("NextcloudUrl")] [ValidateNotNullOrWhiteSpace()] [string]$url,
+        [Alias("DirectoryPath")] [ValidateNotNullOrWhiteSpace()] [string]$path,
+        [Alias("UserId")] [ValidateNotNullOrWhiteSpace()] [string]$id,
+        [Alias("UserPassword")] [ValidateNotNullOrWhiteSpace()] [string]$pass,
+        [Alias("OnErrorContinue")] [switch]$silent
+    )
+    try {
+        $directory = Find-NextcloudItem $url $path $id $pass -OnErrorContinue
+        if (!$directory) {
+            $rest = @{
+                Uri = "$($url)/remote.php/dav/files/$($id)/$($path)"
+                CustomMethod = "MKCOL"
+                Authentication = "Basic"
+                Credential = [pscredential]::new($id, (ConvertTo-SecureString $pass -AsPlainText -Force))
+            }
+            Invoke-RestMethod @rest | Out-Null
+            $directory = Find-NextcloudItem $url $path $id $pass
+        }
+        return $directory
+    }
+    catch { if ($silent) { return $null } else { throw } }
+}
